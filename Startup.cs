@@ -70,15 +70,6 @@ namespace Aserto.TodoApp
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
-      if (env.IsDevelopment())
-      {
-        app.UseDeveloperExceptionPage();
-      }
-
-      app.UseHttpsRedirection();
-
-      app.UseRouting();
-
       // global cors policy
       app.UseCors(x =>
       {
@@ -87,6 +78,16 @@ namespace Aserto.TodoApp
         x.WithOrigins("http://localhost:3000");
         x.AllowCredentials();
       });
+
+      if (env.IsDevelopment())
+      {
+        app.UseDeveloperExceptionPage();
+      }
+
+      //app.UseHttpsRedirection();
+
+      app.UseRouting();
+
 
       app.UseAuthentication();
 
