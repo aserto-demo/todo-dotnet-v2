@@ -14,6 +14,7 @@ using Aserto.TodoApp.Persistence.Contexts;
 using Aserto.TodoApp.Persistence.Repositories;
 using Aserto.TodoApp.Services;
 using Aserto.TodoApp.Configuration;
+using Aserto.TodoApp.Options;
 
 namespace Aserto.TodoApp
 {
@@ -53,6 +54,7 @@ namespace Aserto.TodoApp
       //end Aserto options handling
 
       services.Configure<AsertoConfig>(Configuration.GetSection("Aserto"));
+      services.Configure<DirectoryConfig>(Configuration.GetSection("Directory"));
 
       services.AddAuthorization(options =>
       {
