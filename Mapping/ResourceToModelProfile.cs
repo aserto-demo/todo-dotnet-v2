@@ -5,11 +5,11 @@ using Aserto.TodoApp.Resources;
 
 namespace Aserto.TodoApp.Mapping
 {
-  public class ResourceToModelProfile : Profile
-  {
-    public ResourceToModelProfile()
+    public class ResourceToModelProfile : Profile
     {
-      CreateMap<SaveTodoResource, Todo>();
+        public ResourceToModelProfile()
+        {
+            CreateMap<SaveTodoResource, Todo>();
+        }
     }
-  }
 }

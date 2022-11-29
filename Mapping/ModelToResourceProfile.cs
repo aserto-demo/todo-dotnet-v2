@@ -4,11 +4,11 @@ using Aserto.TodoApp.Resources;
 
 namespace Aserto.TodoApp.Mapping
 {
-  public class ModelToResourceProfile : Profile
-  {
-    public ModelToResourceProfile()
+    public class ModelToResourceProfile : Profile
     {
-      CreateMap<Todo, TodoResource>();
+        public ModelToResourceProfile()
+        {
+            CreateMap<Todo, TodoResource>();
+        }
     }
-  }
 }

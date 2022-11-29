@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -35,9 +36,13 @@ namespace Aserto.TodoApp.Controllers
             todo.Completed = resource.Completed;
 
             var authorizationHeader = HttpContext.Request.Headers.Authorization;
-            var jwtToken = new JwtSecurityToken(authorizationHeader);
+            var userIdentitiesEnumerator = HttpContext.User.Identities.GetEnumerator();
 
-            todo.OwnerID = jwtToken.Subject.ToString();
+
+            while (userIdentitiesEnumerator.MoveNext())
+            {
+                todo.OwnerID = GetNameIdentifierValue(userIdentitiesEnumerator.Current);
+            }
 
             var result = await _todoService.SaveAsync(todo);
 
@@ -46,6 +51,12 @@ namespace Aserto.TodoApp.Controllers
 
             var todoResource = _mapper.Map<Todo, TodoResource>(result.Todo);
             return Ok(todoResource);
+        }
+
+        private static string GetNameIdentifierValue(ClaimsIdentity claimsIdentity)
+        {
+            var claim = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            return claim;
         }
     }
 }
