@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Aserto.TodoApp.Controllers
 {
   [ApiController]
-  [Route("/todo/{ownerID}")]
+  [Route("/todo/{id}")]
   public class DeleteTodoOwnerIDController : ControllerBase
   {
 
