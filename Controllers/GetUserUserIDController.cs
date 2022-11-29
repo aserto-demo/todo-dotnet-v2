@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Aserto.TodoApp.Controllers
 {
   [ApiController]
-  [Route("/user/{userID}")]
+  [Route("/users/{userID}")]
   public class GetUserUserIDController : ControllerBase
   {
     private readonly IUserService _userService;

@@ -11,7 +11,7 @@ using System.IdentityModel.Tokens.Jwt;
 namespace Aserto.TodoApp.Controllers
 {
     [ApiController]
-    [Route("/todo")]
+    [Route("/todos")]
     public class PostTodoController : ControllerBase
     {
         private readonly ITodoService _todoService;

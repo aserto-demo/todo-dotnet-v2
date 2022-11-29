@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Aserto.TodoApp.Controllers
 {
   [ApiController]
-  [Route("/todo/{id}")]
+  [Route("/todos/{id}")]
   public class PutTodoOwnerIDController : ControllerBase
   {
     private readonly ITodoService _todoService;
