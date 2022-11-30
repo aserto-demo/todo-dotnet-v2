@@ -14,29 +14,28 @@ namespace Aserto.TodoApp.Controllers
   public class DeleteTodoOwnerIDController : ControllerBase
   {
 
-    private readonly ITodoService _todoService;
-    private readonly IMapper _mapper;
+    private readonly ITodoService todoService;
+    private readonly IMapper mapper;
 
     public DeleteTodoOwnerIDController(ITodoService todoService, IMapper mapper)
     {
-      _todoService = todoService;
-      _mapper = mapper;
+      this.todoService = todoService;
+      this.mapper = mapper;
     }
 
     [HttpDelete]
     [Authorize("Aserto")]
-    public async Task<IActionResult> DeleteAsync([FromBody] SaveTodoResource resource)
+    public async Task<IActionResult> DeleteAsync(string id)
     {
       if (!ModelState.IsValid)
         return BadRequest(ModelState.GetErrorMessages());
 
-      var todo = _mapper.Map<SaveTodoResource, Todo>(resource);
-      var result = await _todoService.DeleteAsync(todo);
+      var result = await todoService.DeleteAsync(id);
 
       if (!result.Success)
         return BadRequest(result.Message);
 
-      var todoResource = _mapper.Map<Todo, TodoResource>(result.Todo);
+      var todoResource = mapper.Map<Todo, TodoResource>(result.Todo);
       return Ok(true);
     }
   }

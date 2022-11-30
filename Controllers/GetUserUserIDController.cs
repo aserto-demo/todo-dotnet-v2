@@ -9,21 +9,18 @@ namespace Aserto.TodoApp.Controllers
   [Route("/users/{userID}")]
   public class GetUserUserIDController : ControllerBase
   {
-    private readonly IUserService _userService;
-    private readonly IMapper _mapper;
+    private readonly IUserService userService;
 
-
-    public GetUserUserIDController(IUserService userService, IMapper mapper)
+    public GetUserUserIDController(IUserService userService)
     {
-      _userService = userService;
-      _mapper = mapper;
+      this.userService = userService;
     }
 
     [HttpGet]
     [Authorize("Aserto")]
-    public async Task<IActionResult> GetAllAsync(string userID)
+    public async Task<IActionResult> GetUserAsync(string userID)
     {
-      var result = await _userService.Get(userID);
+      var result = await userService.Get(userID);
       return Ok(result.User);
     }
   }

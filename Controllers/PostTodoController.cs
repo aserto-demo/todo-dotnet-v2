@@ -1,3 +1,4 @@
+using System;
 using AutoMapper;
 using Aserto.TodoApp.Domain.Models;
 using Aserto.TodoApp.Domain.Services;
@@ -15,13 +16,13 @@ namespace Aserto.TodoApp.Controllers
     [Route("/todos")]
     public class PostTodoController : ControllerBase
     {
-        private readonly ITodoService _todoService;
-        private readonly IMapper _mapper;
+        private readonly ITodoService todoService;
+        private readonly IMapper mapper;
 
         public PostTodoController(ITodoService todoService, IMapper mapper)
         {
-            _todoService = todoService;
-            _mapper = mapper;
+            this.todoService = todoService;
+            this.mapper = mapper;
         }
 
         [HttpPost]
@@ -32,24 +33,24 @@ namespace Aserto.TodoApp.Controllers
                 return BadRequest(ModelState.GetErrorMessages());
 
             var todo = new Todo();
+            todo.ID = Guid.NewGuid().ToString();
             todo.Title = resource.Title;
             todo.Completed = resource.Completed;
 
             var authorizationHeader = HttpContext.Request.Headers.Authorization;
             var userIdentitiesEnumerator = HttpContext.User.Identities.GetEnumerator();
 
-
             while (userIdentitiesEnumerator.MoveNext())
             {
                 todo.OwnerID = GetNameIdentifierValue(userIdentitiesEnumerator.Current);
             }
 
-            var result = await _todoService.SaveAsync(todo);
+            var result = await todoService.InsertAsync(todo);
 
             if (!result.Success)
                 return BadRequest(result.Message);
 
-            var todoResource = _mapper.Map<Todo, TodoResource>(result.Todo);
+            var todoResource = mapper.Map<Todo, TodoResource>(result.Todo);
             return Ok(todoResource);
         }
 

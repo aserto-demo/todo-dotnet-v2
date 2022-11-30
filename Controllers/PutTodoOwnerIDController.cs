@@ -13,29 +13,33 @@ namespace Aserto.TodoApp.Controllers
   [Route("/todos/{id}")]
   public class PutTodoOwnerIDController : ControllerBase
   {
-    private readonly ITodoService _todoService;
-    private readonly IMapper _mapper;
+    private readonly ITodoService todoService;
+    private readonly IMapper mapper;
 
     public PutTodoOwnerIDController(ITodoService todoService, IMapper mapper)
     {
-      _todoService = todoService;
-      _mapper = mapper;
+      this.todoService = todoService;
+      this.mapper = mapper;
     }
 
     [HttpPut]
     [Authorize("Aserto")]
-    public async Task<IActionResult> PutAsync([FromBody] SaveTodoResource resource)
+    public async Task<IActionResult> PutAsync(string id, [FromBody] SaveTodoResource resource)
     {
       if (!ModelState.IsValid)
+      {
         return BadRequest(ModelState.GetErrorMessages());
+      }
 
-      var todo = _mapper.Map<SaveTodoResource, Todo>(resource);
-      var result = await _todoService.UpdateAsync(todo);
+      var todo = await todoService.GetAsync(id);
+      todo.Title = resource.Title;
+      todo.Completed = resource.Completed;
 
+      var result = await todoService.UpdateAsync(todo);
       if (!result.Success)
         return BadRequest(result.Message);
 
-      var todoResource = _mapper.Map<Todo, TodoResource>(result.Todo);
+      var todoResource = mapper.Map<Todo, TodoResource>(result.Todo);
       return Ok(todoResource);
     }
   }

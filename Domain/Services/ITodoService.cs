@@ -7,8 +7,9 @@ namespace Aserto.TodoApp.Domain.Services
     public interface ITodoService
     {
         Task<IEnumerable<Todo>> ListAsync();
-        Task<SaveTodoResponse> SaveAsync(Todo todo);
+        Task<Todo> GetAsync(string id);
+        Task<SaveTodoResponse> InsertAsync(Todo todo);
         Task<SaveTodoResponse> UpdateAsync(Todo todo);
-        Task<DeleteTodoResponse> DeleteAsync(Todo todo);
+        Task<DeleteTodoResponse> DeleteAsync(string id);
     }
 }

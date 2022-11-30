@@ -1,37 +1,41 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Google.Protobuf.WellKnownTypes;
+
 using Aserto.TodoApp.Domain.Models;
 using Aserto.TodoApp.Domain.Services;
-using Aserto.TodoApp.Domain.Repositories;
 using Aserto.TodoApp.Domain.Services.Communication;
-using System;
-using Google.Protobuf.WellKnownTypes;
+using Aserto.TodoApp.Persistence.Contexts;
 
 namespace Aserto.TodoApp.Services
 {
     public class TodoService : ITodoService
     {
-        private readonly ITodoRepository _todoRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly AppDbContext db;
 
-
-        public TodoService(ITodoRepository todoRepository, IUnitOfWork unitOfWork)
+        public TodoService(AppDbContext dbContext)
         {
-            _todoRepository = todoRepository;
-            _unitOfWork = unitOfWork;
+            this.db = dbContext;
         }
 
         public async Task<IEnumerable<Todo>> ListAsync()
         {
-            return await _todoRepository.ListAsync();
+            return await db.Todos.ToListAsync();
         }
 
-        public async Task<SaveTodoResponse> SaveAsync(Todo todo)
+        public async Task<Todo> GetAsync(string id)
+        {
+            return await db.Todos.FindAsync(id);
+        }
+
+        public async Task<SaveTodoResponse> InsertAsync(Todo todo)
         {
             try
             {
-                await _todoRepository.AddAsync(todo);
-                await _unitOfWork.CompleteAsync();
+                await db.Todos.AddAsync(todo);
+                await db.SaveChangesAsync();
 
                 return new SaveTodoResponse(todo);
             }
@@ -44,10 +48,12 @@ namespace Aserto.TodoApp.Services
 
         public async Task<SaveTodoResponse> UpdateAsync(Todo todo)
         {
-            var existingTodo = await _todoRepository.FindByIdAsync(todo.ID);
+            var existingTodo = await db.Todos.FindAsync(todo.ID);
 
             if (existingTodo == null)
+            {
                 return new SaveTodoResponse("Todo not found.");
+            }
 
             existingTodo.ID = todo.ID;
             existingTodo.Completed = todo.Completed;
@@ -56,8 +62,8 @@ namespace Aserto.TodoApp.Services
 
             try
             {
-                _todoRepository.Update(existingTodo);
-                await _unitOfWork.CompleteAsync();
+                db.Todos.Update(existingTodo);
+                await db.SaveChangesAsync();
 
                 return new SaveTodoResponse(existingTodo);
             }
@@ -67,12 +73,13 @@ namespace Aserto.TodoApp.Services
             }
         }
 
-        public async Task<DeleteTodoResponse> DeleteAsync(Todo todo)
+        public async Task<DeleteTodoResponse> DeleteAsync(string id)
         {
             try
             {
-                _todoRepository.Delete(todo);
-                await _unitOfWork.CompleteAsync();
+                var todo = db.Todos.Find(id);
+                db.Todos.Remove(todo);
+                await db.SaveChangesAsync();
 
                 return new DeleteTodoResponse(true);
             }
@@ -80,11 +87,6 @@ namespace Aserto.TodoApp.Services
             {
                 return new DeleteTodoResponse($"An error occurred when deleting the todo: {ex.Message}");
             }
-        }
-
-        public static Struct GetResource()
-        {
-            return null;
         }
     }
 }

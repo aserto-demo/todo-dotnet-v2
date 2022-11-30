@@ -8,10 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Aserto.AspNetCore.Middleware.Extensions;
 using Aserto.AspNetCore.Middleware.Policies;
-using Aserto.TodoApp.Domain.Repositories;
 using Aserto.TodoApp.Domain.Services;
 using Aserto.TodoApp.Persistence.Contexts;
-using Aserto.TodoApp.Persistence.Repositories;
 using Aserto.TodoApp.Services;
 using Aserto.TodoApp.Configuration;
 using Aserto.TodoApp.Options;
@@ -40,14 +38,15 @@ namespace Aserto.TodoApp
             string domain = $"https://{Configuration["OAuth:Domain"]}/";
 
             services.AddDbContext<AppDbContext>(options =>
-            {
-                options.UseInMemoryDatabase("aserto-todo-app-in-memory");
-            });
+                {
+                    options.UseInMemoryDatabase("aserto-todo-app-in-memory");
+                },
+                ServiceLifetime.Transient
+            );
 
-            services.AddScoped<ITodoRepository, TodoRepository>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<ITodoService, TodoService>();
-            services.AddScoped<IUserService, UserService>();
+            // services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddTransient<ITodoService, TodoService>();
+            services.AddTransient<IUserService, UserService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -94,26 +93,26 @@ namespace Aserto.TodoApp
                 app.UseDeveloperExceptionPage();
             }
 
-            //app.UseHttpsRedirection();
-
             app.UseRouting();
-
-
             app.UseAuthentication();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints => endpoints.MapControllers());
 
-            var serviceProviders = app.ApplicationServices;
-            var todoService = serviceProviders.GetService<ITodoService>();
-            AuthzResourceContext.Instance.ResourceMapper =  (policyRoot, httpRequest) =>
+            AuthzResourceContext.Instance.ResourceMapper = (policyRoot, httpRequest) =>
             {
-                var listItems = todoService.ListAsync();
-                listItems.Wait();
-
                 Struct result = new Struct();
-                result.Fields["foo"] = Value.ForString("bar");
+
+                if (httpRequest.RouteValues.ContainsKey("id"))
+                {
+                    using (var scope = app.ApplicationServices.CreateScope())
+                    {
+                        var todoService = scope.ServiceProvider.GetService<ITodoService>();
+                        var todoTask = todoService.GetAsync((string)httpRequest.RouteValues["id"]);
+                        todoTask.Wait();
+
+                        result.Fields.Add("ownerID", Value.ForString(todoTask.Result.OwnerID));
+                    }
+                }
 
                 return result;
             };
