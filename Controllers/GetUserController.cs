@@ -7,11 +7,11 @@ namespace Aserto.TodoApp.Controllers
 {
   [ApiController]
   [Route("/users/{userID}")]
-  public class GetUserUserIDController : ControllerBase
+  public class GetUserController : ControllerBase
   {
     private readonly IUserService userService;
 
-    public GetUserUserIDController(IUserService userService)
+    public GetUserController(IUserService userService)
     {
       this.userService = userService;
     }
