@@ -28,7 +28,7 @@ namespace Aserto.TodoApp.Services
             {
                 throw new Exception("Invalid config");
             }
-            //TODO: define config
+
             var insecure = opts.Insecure;
             var directoryServiceURL = opts.ServiceUrl;
 
