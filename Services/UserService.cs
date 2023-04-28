@@ -39,7 +39,7 @@ namespace Aserto.TodoApp.Services
                 var httpHandler = new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
                 };
 
                 grpcChannelOptions = new GrpcChannelOptions { HttpHandler = httpHandler };
@@ -54,29 +54,39 @@ namespace Aserto.TodoApp.Services
 
         private async Task<GetUserResponse> GetUserBySub(string sub)
         {
-            var getObjRequest = new GetObjectRequest();
-            getObjRequest.Param = new ObjectIdentifier();
-            getObjRequest.Param.Key = sub;
-            getObjRequest.Param.Type = "user";
+            var metaData = new Grpc.Core.Metadata
+            {
+                { "Aserto-Tenant-Id", $"{this.opts.TenantID}" },
+                { "Authorization", $"basic {this.opts.APIKey}" },
+            };
 
-            var respUser = new User();
+            var getRelationRequest = new GetRelationRequest {
+                Param = new RelationIdentifier {
+                    Subject = new ObjectIdentifier { Type = "user" },
+                    Object = new ObjectIdentifier { Type = "identity", Key = sub },
+                    Relation = new RelationTypeIdentifier { ObjectType = "identity", Name = "identifier" },
+                }
+            };
+
             try
             {
-                //TODO: move this into config
-                var tenantID = this.opts.TenantID;
-                var dirApiKey = this.opts.APIKey;
-                var metaData = new Grpc.Core.Metadata
+                var getRelationResponse = await this.directoryReaderClient.GetRelationAsync(getRelationRequest, metaData);
+                if (getRelationResponse.Results.Count == 0)
                 {
-                    { "Aserto-Tenant-Id", $"{tenantID}" },
-                    { "Authorization", $"basic {dirApiKey}" },
-                };
+                    return new GetUserResponse($"No user with identity: {sub}");
+                }
 
+                var getObjRequest = new GetObjectRequest { Param = getRelationResponse.Results[0].Subject };
                 var getObjResponse = await this.directoryReaderClient.GetObjectAsync(getObjRequest, metaData);
 
-                respUser.email = getObjResponse.Result.Properties.Fields["email"].StringValue;
-                respUser.picture = getObjResponse.Result.Properties.Fields["picture"].StringValue;
-                respUser.display_name = getObjResponse.Result.DisplayName;
-                respUser.id = getObjResponse.Result.Id;
+                var user = new User
+                {
+                    id = getObjResponse.Result.Key,
+                    email = getObjResponse.Result.Properties.Fields["email"].StringValue,
+                    picture = getObjResponse.Result.Properties.Fields["picture"].StringValue,
+                    display_name = getObjResponse.Result.DisplayName,
+                };
+                return new GetUserResponse(true, user);
             }
             catch (Exception ex)
             {
@@ -84,13 +94,10 @@ namespace Aserto.TodoApp.Services
                 Console.WriteLine("Message :{0} ", ex.Message);
                 return new GetUserResponse($"An error occurred when getting user: {ex.Message}");
             }
-
-            return new GetUserResponse(true, respUser);
         }
 
         public async Task<GetUserResponse> Get(string sub)
         {
-
             if (sub != "undefined")
             {
                 return await GetUserBySub(sub);

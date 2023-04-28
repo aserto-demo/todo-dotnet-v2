@@ -17,11 +17,13 @@ namespace Aserto.TodoApp.Controllers
     public class PostTodoController : ControllerBase
     {
         private readonly ITodoService todoService;
+        private readonly IUserService userService;
         private readonly IMapper mapper;
 
-        public PostTodoController(ITodoService todoService, IMapper mapper)
+        public PostTodoController(ITodoService todoService, IUserService userService, IMapper mapper)
         {
             this.todoService = todoService;
+            this.userService = userService;
             this.mapper = mapper;
         }
 
@@ -32,18 +34,17 @@ namespace Aserto.TodoApp.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState.GetErrorMessages());
 
+            var pid = GetCallerPID();
+            if (pid == "")
+                return Unauthorized();
+
+            var userResponse = await userService.Get(pid);
+
             var todo = new Todo();
             todo.ID = Guid.NewGuid().ToString();
+            todo.OwnerID = userResponse.User.id;
             todo.Title = resource.Title;
             todo.Completed = resource.Completed;
-
-            var authorizationHeader = HttpContext.Request.Headers.Authorization;
-            var userIdentitiesEnumerator = HttpContext.User.Identities.GetEnumerator();
-
-            while (userIdentitiesEnumerator.MoveNext())
-            {
-                todo.OwnerID = GetNameIdentifierValue(userIdentitiesEnumerator.Current);
-            }
 
             var result = await todoService.InsertAsync(todo);
 
@@ -58,6 +59,16 @@ namespace Aserto.TodoApp.Controllers
         {
             var claim = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
             return claim;
+        }
+
+        private string GetCallerPID() {
+            var userIdentitiesEnumerator = HttpContext.User.Identities.GetEnumerator();
+            while (userIdentitiesEnumerator.MoveNext())
+            {
+                return GetNameIdentifierValue(userIdentitiesEnumerator.Current);
+            }
+
+            return "";
         }
     }
 }
