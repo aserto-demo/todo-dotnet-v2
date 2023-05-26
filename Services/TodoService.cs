@@ -17,7 +17,7 @@ namespace Aserto.TodoApp.Services
 
         public TodoService(AppDbContext dbContext)
         {
-            this.db = dbContext;
+            db = dbContext;
         }
 
         public async Task<IEnumerable<Todo>> ListAsync()

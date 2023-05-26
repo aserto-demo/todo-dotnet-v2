@@ -3,22 +3,17 @@ using Aserto.TodoApp.Domain.Models;
 using Aserto.TodoApp.Domain.Services;
 using Aserto.TodoApp.Domain.Services.Communication;
 using System;
-using System.Net.Http;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
-using Aserto.TodoApp.Configuration;
-using System.Text;
-using static Aserto.Directory.Reader.V2.Reader;
-using Grpc.Net.Client;
-using Aserto.Directory.Reader.V2;
-using Aserto.Directory.Common.V2;
+using Microsoft.Extensions.Logging;
+using Aserto.AspNetCore.Middleware.Clients;
+using Aserto.AspNetCore.Middleware.Options;
 using Aserto.TodoApp.Options;
 
 namespace Aserto.TodoApp.Services
 {
     public class UserService : IUserService
     {
-        private readonly ReaderClient directoryReaderClient;
+        private readonly DirectoryAPIClient directoryClient;
         private readonly DirectoryConfig opts;
 
         public UserService(IOptions<DirectoryConfig> config)
@@ -29,55 +24,32 @@ namespace Aserto.TodoApp.Services
                 throw new Exception("Invalid config");
             }
 
-            var insecure = opts.Insecure;
-            var directoryServiceURL = opts.ServiceUrl;
-
-            var grpcChannelOptions = new GrpcChannelOptions { };
-
-            if (insecure)
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
-                var httpHandler = new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-                };
+                builder.AddFilter("Microsoft", LogLevel.Warning)
+                .AddFilter("System", LogLevel.Debug)
+                .AddConsole();
+            });
 
-                grpcChannelOptions = new GrpcChannelOptions { HttpHandler = httpHandler };
-            }
+            var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
 
-            var channel = GrpcChannel.ForAddress(
-                directoryServiceURL,
-                grpcChannelOptions);
-
-            this.directoryReaderClient = new ReaderClient(channel);
+            var optionsInt = Microsoft.Extensions.Options.Options.Create(options);
+            directoryClient = new DirectoryAPIClient(optionsInt, loggerFactory);
         }
 
         private async Task<GetUserResponse> GetUserBySub(string sub)
         {
-            var metaData = new Grpc.Core.Metadata
-            {
-                { "Aserto-Tenant-Id", $"{this.opts.TenantID}" },
-                { "Authorization", $"basic {this.opts.APIKey}" },
-            };
-
-            var getRelationRequest = new GetRelationRequest {
-                Param = new RelationIdentifier {
-                    Subject = new ObjectIdentifier { Type = "user" },
-                    Object = new ObjectIdentifier { Type = "identity", Key = sub },
-                    Relation = new RelationTypeIdentifier { ObjectType = "identity", Name = "identifier" },
-                }
-            };
-
             try
             {
-                var getRelationResponse = await this.directoryReaderClient.GetRelationAsync(getRelationRequest, metaData);
+                var getRelationResponse = await directoryClient.GetRelationAsync(subjectType: "user", objType: "identity", objKey: sub, relationName: "identifier", relationObjectType: "identity");
                 if (getRelationResponse.Results.Count == 0)
                 {
                     return new GetUserResponse($"No user with identity: {sub}");
                 }
 
-                var getObjRequest = new GetObjectRequest { Param = getRelationResponse.Results[0].Subject };
-                var getObjResponse = await this.directoryReaderClient.GetObjectAsync(getObjRequest, metaData);
+                var objType = getRelationResponse.Results[0].Subject.Type;
+                var objKey = getRelationResponse.Results[0].Subject.Key;
+                var getObjResponse = await directoryClient.GetObjectAsync(objKey, objType);
 
                 var user = new User
                 {
@@ -98,17 +70,9 @@ namespace Aserto.TodoApp.Services
 
         private async Task<GetUserResponse> GetById(string userId)
         {
-            var metaData = new Grpc.Core.Metadata
-            {
-                { "Aserto-Tenant-Id", $"{this.opts.TenantID}" },
-                { "Authorization", $"basic {this.opts.APIKey}" },
-            };
-
             try
             {
-                var objectIdentifier = new ObjectIdentifier { Type = "user", Key = userId };
-                var getObjRequest = new GetObjectRequest { Param = objectIdentifier };
-                var getObjResponse = await this.directoryReaderClient.GetObjectAsync(getObjRequest, metaData);
+                var getObjResponse = await directoryClient.GetObjectAsync(userId, "user");
 
                 var user = new User
                 {
@@ -152,3 +116,4 @@ namespace Aserto.TodoApp.Services
         }
     }
 }
+
