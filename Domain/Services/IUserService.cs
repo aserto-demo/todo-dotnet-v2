@@ -5,5 +5,6 @@ namespace Aserto.TodoApp.Domain.Services
     public interface IUserService
     {
         Task<GetUserResponse> Get(string sub);
+        Task<GetUserResponse> GetByUserId(string objectId);
     }
 }

@@ -96,6 +96,37 @@ namespace Aserto.TodoApp.Services
             }
         }
 
+        private async Task<GetUserResponse> GetById(string userId)
+        {
+            var metaData = new Grpc.Core.Metadata
+            {
+                { "Aserto-Tenant-Id", $"{this.opts.TenantID}" },
+                { "Authorization", $"basic {this.opts.APIKey}" },
+            };
+
+            try
+            {
+                var objectIdentifier = new ObjectIdentifier { Type = "user", Key = userId };
+                var getObjRequest = new GetObjectRequest { Param = objectIdentifier };
+                var getObjResponse = await this.directoryReaderClient.GetObjectAsync(getObjRequest, metaData);
+
+                var user = new User
+                {
+                    id = getObjResponse.Result.Key,
+                    email = getObjResponse.Result.Properties.Fields["email"].StringValue,
+                    picture = getObjResponse.Result.Properties.Fields["picture"].StringValue,
+                    display_name = getObjResponse.Result.DisplayName,
+                };
+                return new GetUserResponse(true, user);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\nException Caught!");
+                Console.WriteLine("Message :{0} ", ex.Message);
+                return new GetUserResponse($"An error occurred when getting user: {ex.Message}");
+            }
+        }
+
         public async Task<GetUserResponse> Get(string sub)
         {
             if (sub != "undefined")
@@ -106,7 +137,18 @@ namespace Aserto.TodoApp.Services
             {
                 return new GetUserResponse("No user identity provided");
             }
+        }
 
+        public async Task<GetUserResponse> GetByUserId(string objectId)
+        {
+            if (objectId != "undefined")
+            {
+                return await GetById(objectId);
+            }
+            else
+            {
+                return new GetUserResponse("No user identity provided");
+            }
         }
     }
 }
