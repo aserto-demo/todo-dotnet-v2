@@ -17,11 +17,19 @@ using Google.Protobuf.WellKnownTypes;
 using System;
 using Microsoft.AspNetCore.Http;
 using Aserto.TodoApp.Mapping;
+using System.Collections.Generic;
+using System.Security.Claims;
+using Aserto.AspNetCore.Middleware.Options;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
+using Aserto.Authorizer.V2.API;
 
 namespace Aserto.TodoApp
 {
     public class Startup
     {
+        public CheckOptions checkOptions = new CheckOptions();
+
         delegate Struct ResolveResourceContext(string policyRoot, HttpContext httpContext);
 
         public Startup(IConfiguration configuration)
@@ -59,19 +67,42 @@ namespace Aserto.TodoApp
             {
                 Configuration.GetSection("Aserto").Bind(options);
                 options.ResourceMapper = AuthzResourceContext.Instance.ResourceMapper;
+                options.IdentityMapper = AuthzIdentityContext.Instance.IdentityMapper;
             });
             //end Aserto options handling
+
+            var checkResourceRules = new Dictionary<string, Func<string, HttpRequest, Struct>>();
+
+            checkResourceRules.Add("admin", (policyRoot, httpRequest) =>
+            {
+                Struct result = new Struct();
+                result.Fields.Add("object_key", Value.ForString("group"));
+                result.Fields.Add("object_type", Value.ForString("admin"));
+                result.Fields.Add("realation", Value.ForString("member"));
+                return result;
+            });
+          
+            Configuration.GetSection("Aserto").Bind(checkOptions.BaseOptions);
+            
+            checkOptions.ResourceMappingRules = checkResourceRules;
+
+            // Adding the check middleware with the 'admin' resource context rule
+            // will populate the resource context for controllers that have the check attribute set to admin
+            services.AddAsertoCheckAuthorization(checkOptions);
+
 
             services.Configure<AsertoConfig>(Configuration.GetSection("Aserto"));
             services.Configure<DirectoryConfig>(Configuration.GetSection("Directory"));
 
+            string[] claimTypes = { ClaimTypes.Email };
+                        
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("Aserto", policy => policy.Requirements.Add(new AsertoDecisionRequirement()));
+                options.AddPolicy("Aserto", policy => policy.Requirements.Add(new AsertoDecisionRequirement(claimTypes)));
             });
             // Only authorizes the endpoints that have the [Authorize("Aserto")] attribute
 
-            services.AddControllers();
+            services.AddControllers();            
             services.AddAutoMapper(typeof(Startup).Assembly);
 
         }
@@ -94,8 +125,9 @@ namespace Aserto.TodoApp
             }
 
             app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
+            app.UseAuthentication();            
+            app.UseAuthorization();            
+            app.UseAsertoCheckAuthorization();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
 
             AuthzResourceContext.Instance.ResourceMapper = (policyRoot, httpRequest) =>

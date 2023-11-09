@@ -6,6 +6,7 @@ using Aserto.TodoApp.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Aserto.AspNetCore.Middleware.Extensions;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -13,7 +14,6 @@ namespace Aserto.TodoApp.Controllers
   [Route("/todos/{id}")]
   public class DeleteTodoController : ControllerBase
   {
-
     private readonly ITodoService todoService;
     private readonly IMapper mapper;
 
@@ -25,6 +25,7 @@ namespace Aserto.TodoApp.Controllers
 
     [HttpDelete]
     [Authorize("Aserto")]
+    [Check("admin")]
     public async Task<IActionResult> DeleteAsync(string id)
     {
       if (!ModelState.IsValid)

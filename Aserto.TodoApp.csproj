@@ -5,13 +5,27 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aserto.AspNetCore.Middleware" Version="0.20.1" />
-    <PackageReference Include="Aserto.Directory.V2.Client.Grpc" Version="0.0.3" />
     <PackageReference Include="AutoMapper" Version="11.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.12.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.0" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.59.0-pre1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.59.0-pre1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aserto.AspNetCore.Middleware">
+      <HintPath>..\aserto-dotnet\src\Aserto.AspNetCore.Middleware\bin\Debug\net7\Aserto.AspNetCore.Middleware.dll</HintPath>
+    </Reference>
+    <Reference Include="Aserto.Authorizer.V2.Client.Grpc">
+      <HintPath>..\aserto-dotnet\src\Aserto.AspNetCore.Middleware\bin\Debug\net7\Aserto.Authorizer.V2.Client.Grpc.dll</HintPath>
+    </Reference>
+    <Reference Include="Aserto.Directory.V3.Client.Grpc">
+      <HintPath>..\aserto-dotnet\src\Aserto.AspNetCore.Middleware\bin\Debug\net7\Aserto.Directory.V3.Client.Grpc.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 
