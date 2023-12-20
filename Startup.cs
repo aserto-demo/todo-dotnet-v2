@@ -17,6 +17,10 @@ using Google.Protobuf.WellKnownTypes;
 using System;
 using Microsoft.AspNetCore.Http;
 using Aserto.TodoApp.Mapping;
+using AspNetCore.Authentication.Basic;
+using Aserto.Authorizer.V2.API;
+using System.Security.Claims;
+using System.Collections.Generic;
 
 namespace Aserto.TodoApp
 {
@@ -47,18 +51,16 @@ namespace Aserto.TodoApp
             // services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddTransient<ITodoService, TodoService>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IUserRepository, UserRepository>();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-            {
-                options.Authority = domain;
-                options.Audience = Configuration["OAuth:Audience"];
-            });
+            services.AddAuthentication(BasicDefaults.AuthenticationScheme).AddBasic<BasicUserValidationService>(options => { options.Realm = "My App"; });
 
             //Aserto options handling
             services.AddAsertoAuthorization(options =>
             {
                 Configuration.GetSection("Aserto").Bind(options);
                 options.ResourceMapper = AuthzResourceContext.Instance.ResourceMapper;
+                //options.IdentityMapper = myIdentityMapper;
             });
             //end Aserto options handling
 
@@ -75,6 +77,15 @@ namespace Aserto.TodoApp
             services.AddAutoMapper(typeof(Startup).Assembly);
 
         }
+        /*
+        private IdentityContext myIdentityMapper(ClaimsPrincipal principal, IEnumerable<string> enumerable)
+        {
+            return new IdentityContext()
+            {
+                Type = IdentityType.Sub,
+                Identity = "rick@the-citadel.com",
+            };
+        }*/
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -96,7 +107,11 @@ namespace Aserto.TodoApp
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseEndpoints(endpoints => endpoints.MapControllers());
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+            
 
             AuthzResourceContext.Instance.ResourceMapper = (policyRoot, httpRequest) =>
             {

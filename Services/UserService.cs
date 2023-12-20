@@ -5,9 +5,10 @@ using Aserto.TodoApp.Domain.Services.Communication;
 using System;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Aserto.AspNetCore.Middleware.Clients;
 using Aserto.AspNetCore.Middleware.Options;
 using Aserto.TodoApp.Options;
+using System.Numerics;
+using Aserto.AspNetCore.Middleware.Clients.Directory.V2;
 
 namespace Aserto.TodoApp.Services
 {
@@ -34,7 +35,7 @@ namespace Aserto.TodoApp.Services
             var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
 
             var optionsInt = Microsoft.Extensions.Options.Options.Create(options);
-            directoryClient = new DirectoryAPIClient(optionsInt, loggerFactory);
+            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V2.DirectoryAPIClient(optionsInt, loggerFactory);
         }
 
         private async Task<GetUserResponse> GetUserBySub(string sub)
