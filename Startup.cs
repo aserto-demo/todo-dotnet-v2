@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Aserto.AspNetCore.Middleware.Extensions;
 using Aserto.AspNetCore.Middleware.Policies;
 using Aserto.TodoApp.Domain.Services;
-using Aserto.TodoApp.Persistence.Contexts;
 using Aserto.TodoApp.Services;
 using Aserto.TodoApp.Configuration;
 using Aserto.TodoApp.Options;
@@ -17,11 +16,20 @@ using Google.Protobuf.WellKnownTypes;
 using System;
 using Microsoft.AspNetCore.Http;
 using Aserto.TodoApp.Mapping;
+using System.Collections.Generic;
+using System.Security.Claims;
+using Aserto.AspNetCore.Middleware.Options;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
+using Aserto.Authorizer.V2.API;
+using Aserto.TodoApp.Persistence.Contexts;
 
 namespace Aserto.TodoApp
 {
     public class Startup
     {
+        public CheckOptions checkOptions = new CheckOptions();
+
         delegate Struct ResolveResourceContext(string policyRoot, HttpContext httpContext);
 
         public Startup(IConfiguration configuration)
@@ -31,6 +39,15 @@ namespace Aserto.TodoApp
 
         public IConfiguration Configuration { get; }
 
+        private string CheckPolicyPathMapper(string policyRoot, HttpRequest request)
+        {
+            if (request.Method == "POST")
+            {
+                return "rebac.check";
+            }
+            return AsertoOptionsDefaults.DefaultPolicyPathMapper(policyRoot, request);
+        }
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -39,9 +56,9 @@ namespace Aserto.TodoApp
 
             services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("aserto-todo-app-in-memory");
+                    options.UseSqlite(@"Data Source=Application.db;Cache=Shared");
                 },
-                ServiceLifetime.Transient
+                ServiceLifetime.Singleton
             );
 
             // services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -58,20 +75,53 @@ namespace Aserto.TodoApp
             services.AddAsertoAuthorization(options =>
             {
                 Configuration.GetSection("Aserto").Bind(options);
-                options.ResourceMapper = AuthzResourceContext.Instance.ResourceMapper;
+                options.IdentityMapper = AuthzIdentityContext.Instance.IdentityMapper;
             });
             //end Aserto options handling
+
+            var checkResourceRules = new Dictionary<string, Func<string, HttpRequest, Struct>>();
+
+            checkResourceRules.Add("member", (policyRoot, httpRequest) =>
+            {
+                Struct result = new Struct();
+                if (httpRequest.Method == "POST")
+                {
+                    result.Fields.Add("object_id", Value.ForString("resource-creators"));
+                    result.Fields.Add("object_type", Value.ForString("resource-creator"));
+                    result.Fields.Add("relation", Value.ForString("member"));
+                    return result;
+                }
+
+                if (httpRequest.RouteValues.ContainsKey("id"))
+                {
+                    result.Fields.Add("object_id", Value.ForString((string)httpRequest.RouteValues["id"]));
+                }
+
+                return result;
+            });
+          
+            Configuration.GetSection("Aserto").Bind(checkOptions.BaseOptions);
+            
+            checkOptions.ResourceMappingRules = checkResourceRules;
+            checkOptions.BaseOptions.PolicyPathMapper =  CheckPolicyPathMapper;
+
+            // Adding the check middleware with the 'member' resource context rule
+            // will populate the resource context for controllers that have the check attribute set to admin
+            services.AddAsertoCheckAuthorization(checkOptions);
+
 
             services.Configure<AsertoConfig>(Configuration.GetSection("Aserto"));
             services.Configure<DirectoryConfig>(Configuration.GetSection("Directory"));
 
+            string[] claimTypes = { ClaimTypes.Email };
+                        
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("Aserto", policy => policy.Requirements.Add(new AsertoDecisionRequirement()));
+                options.AddPolicy("Aserto", policy => policy.Requirements.Add(new AsertoDecisionRequirement(claimTypes)));
             });
             // Only authorizes the endpoints that have the [Authorize("Aserto")] attribute
 
-            services.AddControllers();
+            services.AddControllers();            
             services.AddAutoMapper(typeof(Startup).Assembly);
 
         }
@@ -94,28 +144,10 @@ namespace Aserto.TodoApp
             }
 
             app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
+            app.UseAuthentication();            
+            app.UseAuthorization();            
+            app.UseAsertoCheckAuthorization();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
-
-            AuthzResourceContext.Instance.ResourceMapper = (policyRoot, httpRequest) =>
-            {
-                Struct result = new Struct();
-
-                if (httpRequest.RouteValues.ContainsKey("id"))
-                {
-                    using (var scope = app.ApplicationServices.CreateScope())
-                    {
-                        var todoService = scope.ServiceProvider.GetService<ITodoService>();
-                        var todoTask = todoService.GetAsync((string)httpRequest.RouteValues["id"]);
-                        todoTask.Wait();
-
-                        result.Fields.Add("ownerID", Value.ForString(todoTask.Result.OwnerID));
-                    }
-                }
-
-                return result;
-            };
         }
     }
 }

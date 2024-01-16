@@ -5,7 +5,7 @@ using Aserto.TodoApp.Domain.Services.Communication;
 using System;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Aserto.AspNetCore.Middleware.Clients;
+using Aserto.AspNetCore.Middleware.Clients.Directory.V3;
 using Aserto.AspNetCore.Middleware.Options;
 using Aserto.TodoApp.Options;
 
@@ -13,7 +13,7 @@ namespace Aserto.TodoApp.Services
 {
     public class UserService : IUserService
     {
-        private readonly DirectoryAPIClient directoryClient;
+        private readonly Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory directoryClient;
         private readonly DirectoryConfig opts;
 
         public UserService(IOptions<DirectoryConfig> config)
@@ -34,26 +34,26 @@ namespace Aserto.TodoApp.Services
             var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
 
             var optionsInt = Microsoft.Extensions.Options.Options.Create(options);
-            directoryClient = new DirectoryAPIClient(optionsInt, loggerFactory);
+            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(optionsInt, loggerFactory);
         }
 
         private async Task<GetUserResponse> GetUserBySub(string sub)
         {
             try
             {
-                var getRelationResponse = await directoryClient.GetRelationAsync(subjectType: "user", objType: "identity", objKey: sub, relationName: "identifier", relationObjectType: "identity");
-                if (getRelationResponse.Results.Count == 0)
+                var getRelationResponse = await directoryClient.GetRelationAsync(subjectType: "user", objType: "identity", objId: sub, relationName: "identifier");
+                if (getRelationResponse.Result == null)
                 {
                     return new GetUserResponse($"No user with identity: {sub}");
                 }
 
-                var objType = getRelationResponse.Results[0].Subject.Type;
-                var objKey = getRelationResponse.Results[0].Subject.Key;
-                var getObjResponse = await directoryClient.GetObjectAsync(objKey, objType);
+                var objType = getRelationResponse.Result.SubjectType;
+                var objKey = getRelationResponse.Result.SubjectId;
+                var getObjResponse = await directoryClient.GetObjectAsync(objType, objKey);
 
                 var user = new User
                 {
-                    id = getObjResponse.Result.Key,
+                    id = getObjResponse.Result.Id,
                     email = getObjResponse.Result.Properties.Fields["email"].StringValue,
                     picture = getObjResponse.Result.Properties.Fields["picture"].StringValue,
                     display_name = getObjResponse.Result.DisplayName,
@@ -72,11 +72,11 @@ namespace Aserto.TodoApp.Services
         {
             try
             {
-                var getObjResponse = await directoryClient.GetObjectAsync(userId, "user");
+                var getObjResponse = await directoryClient.GetObjectAsync("user", userId);
 
                 var user = new User
                 {
-                    id = getObjResponse.Result.Key,
+                    id = getObjResponse.Result.Id,
                     email = getObjResponse.Result.Properties.Fields["email"].StringValue,
                     picture = getObjResponse.Result.Properties.Fields["picture"].StringValue,
                     display_name = getObjResponse.Result.DisplayName,
@@ -116,4 +116,3 @@ namespace Aserto.TodoApp.Services
         }
     }
 }
-
