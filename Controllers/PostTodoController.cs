@@ -28,8 +28,7 @@ namespace Aserto.TodoApp.Controllers
             this.mapper = mapper;
         }
 
-        [HttpPost]
-        [Authorize]
+        [HttpPost]        
         [Check("member")]
         public async Task<IActionResult> PostAsync([FromBody] SaveTodoResource resource)
         {
