@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Aserto.TodoApp.Domain.Services.Communication;
+using Aserto.AspNetCore.Middleware.Extensions;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -19,7 +20,7 @@ namespace Aserto.TodoApp.Controllers
     }
 
     [HttpGet]
-    [Authorize("Aserto")]
+    [Aserto]
     public async Task<IActionResult> GetUserAsync(string userID)
     {
       var auth = Request.Headers["Authorization"].ToString().Split(' ');

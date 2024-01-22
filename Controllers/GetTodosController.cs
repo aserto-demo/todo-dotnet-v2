@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Aserto.AspNetCore.Middleware.Extensions;
 namespace Aserto.TodoApp.Controllers
 {
   [ApiController]
@@ -22,8 +23,7 @@ namespace Aserto.TodoApp.Controllers
     }
 
     [HttpGet]
-    [Authorize("Aserto")]
-
+    [Aserto]
     public async Task<IEnumerable<TodoResource>> GetAllAsync()
     {
       var todos = await todoService.ListAsync();
