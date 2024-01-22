@@ -28,10 +28,6 @@ namespace Aserto.TodoApp
 {
     public class Startup
     {
-        public CheckOptions checkOptions = new CheckOptions();
-
-        delegate Struct ResolveResourceContext(string policyRoot, HttpContext httpContext);
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -83,7 +79,7 @@ namespace Aserto.TodoApp
             }
             );
             //end Aserto options handling
-          
+            CheckOptions checkOptions = new CheckOptions();
             Configuration.GetSection("Aserto").Bind(checkOptions.BaseOptions);
             // Adding the check middleware
             services.AddAsertoCheckAuthorization(checkOptions,
