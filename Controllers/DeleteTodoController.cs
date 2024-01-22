@@ -6,6 +6,7 @@ using Aserto.TodoApp.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Aserto.AspNetCore.Middleware.Extensions;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -24,7 +25,7 @@ namespace Aserto.TodoApp.Controllers
     }
 
     [HttpDelete]
-    [Authorize("Aserto")]
+    [Aserto]
     public async Task<IActionResult> DeleteAsync(string id)
     {
       if (!ModelState.IsValid)

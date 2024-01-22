@@ -15,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aserto-dotnet\src\Aserto.AspNetCore.Middleware\Aserto.AspNetCore.Middleware.csproj" />
+    <ProjectReference Include="../aserto-dotnet/src/Aserto.AspNetCore.Middleware/Aserto.AspNetCore.Middleware.csproj" />
   </ItemGroup>
 
 </Project>
+
