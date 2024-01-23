@@ -29,7 +29,7 @@ namespace Aserto.TodoApp.Controllers
         }
 
         [HttpPost]        
-        [Check(objectID: "resource-creators", objectType: "resource-creator", relationName: "member")]
+        [Check(objectID: "resource-creators", objectType: "resource-creator", relation: "member")]
         public async Task<IActionResult> PostAsync([FromBody] SaveTodoResource resource)
         {
             if (!ModelState.IsValid)

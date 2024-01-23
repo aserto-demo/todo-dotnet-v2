@@ -21,7 +21,7 @@ namespace Aserto.TodoApp.Services
             this.opts = config.Value;
             if (!opts.IsValid())
             {
-                throw new Exception("Invalid config");
+                throw new Exception("Invalid config. Service url can not be empty");
             }
 
             using var loggerFactory = LoggerFactory.Create(builder =>
@@ -32,9 +32,7 @@ namespace Aserto.TodoApp.Services
             });
 
             var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
-
-            var optionsInt = Microsoft.Extensions.Options.Options.Create(options);
-            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(optionsInt, loggerFactory);
+            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(options, loggerFactory);
         }
 
         private async Task<GetUserResponse> GetUserBySub(string sub)
@@ -42,10 +40,6 @@ namespace Aserto.TodoApp.Services
             try
             {
                 var getRelationResponse = await directoryClient.GetRelationAsync(subjectType: "user", objType: "identity", objId: sub, relationName: "identifier");
-                if (getRelationResponse.Result == null)
-                {
-                    return new GetUserResponse($"No user with identity: {sub}");
-                }
 
                 var objType = getRelationResponse.Result.SubjectType;
                 var objKey = getRelationResponse.Result.SubjectId;
