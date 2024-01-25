@@ -61,8 +61,7 @@ namespace Aserto.TodoApp
             //Aserto options handling
             services.AddAsertoAuthorization(options =>
             {
-                options.PolicyRoot = Configuration.GetSection("Aserto")["PolicyRoot"];
-                options.IdentityMapper = AuthzIdentityContext.Instance.IdentityMapper;              
+                options.PolicyRoot = Configuration.GetSection("Aserto")["PolicyRoot"];          
                 options.ResourceMapper = (policyRoot, httpRequest) =>
                 {
                     Struct result = new Struct();

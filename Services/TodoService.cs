@@ -27,7 +27,7 @@ namespace Aserto.TodoApp.Services
             this.opts = config.Value;
             if (!opts.IsValid())
             {
-                throw new Exception("Invalid config");
+                throw new Exception("Invalid config. Service url can not be empty");
             }
 
             using var loggerFactory = LoggerFactory.Create(builder =>
@@ -38,9 +38,7 @@ namespace Aserto.TodoApp.Services
             });
 
             var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
-
-            var optionsInt = Microsoft.Extensions.Options.Options.Create(options);
-            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(optionsInt, loggerFactory);
+            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(options, loggerFactory);
         }
 
         public async Task<IEnumerable<Todo>> ListAsync()
