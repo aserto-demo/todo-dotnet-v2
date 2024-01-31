@@ -34,7 +34,7 @@ namespace Aserto.TodoApp
         }
 
         public IConfiguration Configuration { get; }
-             
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -90,7 +90,7 @@ namespace Aserto.TodoApp
             services.Configure<AsertoConfig>(Configuration.GetSection("Aserto"));
             services.Configure<DirectoryConfig>(Configuration.GetSection("Directory"));
 
-            services.AddControllers();                    
+            services.AddControllers();
             services.AddAutoMapper(typeof(Startup).Assembly);
 
         }
@@ -103,7 +103,7 @@ namespace Aserto.TodoApp
             {
                 x.AllowAnyHeader();
                 x.AllowAnyMethod();
-                x.WithOrigins("http://localhost:3000");
+                x.WithOrigins("http://localhost:3000", "https://todo.demo.aserto.com");
                 x.AllowCredentials();
             });
 
@@ -114,9 +114,9 @@ namespace Aserto.TodoApp
 
             app.UseRouting();
             app.UseAuthentication();
-            app.UseAsertoAuthorization();        
-            app.UseAsertoCheckAuthorization();            
-            app.UseEndpoints(endpoints => endpoints.MapControllers());            
+            app.UseAsertoAuthorization();
+            app.UseAsertoCheckAuthorization();
+            app.UseEndpoints(endpoints => endpoints.MapControllers());
         }
     }
 }
