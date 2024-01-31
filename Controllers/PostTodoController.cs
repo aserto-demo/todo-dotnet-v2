@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Aserto.AspNetCore.Middleware.Extensions;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -27,8 +28,8 @@ namespace Aserto.TodoApp.Controllers
             this.mapper = mapper;
         }
 
-        [HttpPost]
-        [Authorize("Aserto")]
+        [HttpPost]        
+        [Check(objectID: "resource-creators", objectType: "resource-creator", relation: "member")]
         public async Task<IActionResult> PostAsync([FromBody] SaveTodoResource resource)
         {
             if (!ModelState.IsValid)

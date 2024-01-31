@@ -6,6 +6,7 @@ using Aserto.TodoApp.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Aserto.AspNetCore.Middleware.Extensions;
 
 namespace Aserto.TodoApp.Controllers
 {
@@ -23,7 +24,7 @@ namespace Aserto.TodoApp.Controllers
     }
 
     [HttpPut]
-    [Authorize("Aserto")]
+    [Aserto]
     public async Task<IActionResult> PutAsync(string id, [FromBody] SaveTodoResource resource)
     {
       if (!ModelState.IsValid)

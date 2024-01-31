@@ -2,6 +2,7 @@
 /obj
 /.vscode
 appsettings.json
+Application.db
 
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -392,3 +393,5 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+/Application.db-shm
+/Application.db-wal

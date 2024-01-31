@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Aserto.AspNetCore.Middleware.Extensions;
 using Aserto.AspNetCore.Middleware.Policies;
 using Aserto.TodoApp.Domain.Services;
-using Aserto.TodoApp.Persistence.Contexts;
 using Aserto.TodoApp.Services;
 using Aserto.TodoApp.Configuration;
 using Aserto.TodoApp.Options;
@@ -17,13 +16,18 @@ using Google.Protobuf.WellKnownTypes;
 using System;
 using Microsoft.AspNetCore.Http;
 using Aserto.TodoApp.Mapping;
+using System.Collections.Generic;
+using System.Security.Claims;
+using Aserto.AspNetCore.Middleware.Options;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
+using Aserto.Authorizer.V2.API;
+using Aserto.TodoApp.Persistence.Contexts;
 
 namespace Aserto.TodoApp
 {
     public class Startup
     {
-        delegate Struct ResolveResourceContext(string policyRoot, HttpContext httpContext);
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -39,9 +43,9 @@ namespace Aserto.TodoApp
 
             services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("aserto-todo-app-in-memory");
+                    options.UseSqlite(@"Data Source=Application.db;Cache=Shared");
                 },
-                ServiceLifetime.Transient
+                ServiceLifetime.Singleton
             );
 
             // services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -58,18 +62,33 @@ namespace Aserto.TodoApp
             services.AddAsertoAuthorization(options =>
             {
                 Configuration.GetSection("Aserto").Bind(options);
-                options.ResourceMapper = AuthzResourceContext.Instance.ResourceMapper;
-            });
+                options.ResourceMapper = (policyRoot, httpRequest) =>
+                {
+                    Struct result = new Struct();
+                    if (httpRequest.RouteValues.ContainsKey("id"))
+                    {
+                        result.Fields.Add("object_id", Value.ForString((string)httpRequest.RouteValues["id"]));
+                    }
+                    return result;
+                };
+            },
+            authorizerConfig =>
+            {
+                Configuration.GetSection("Aserto").Bind(authorizerConfig);
+            }
+            );
             //end Aserto options handling
+            CheckOptions checkOptions = new CheckOptions();
+            Configuration.GetSection("Aserto").Bind(checkOptions.BaseOptions);
+            // Adding the check middleware
+            services.AddAsertoCheckAuthorization(checkOptions,
+            authorizerConfig =>
+            {
+                Configuration.GetSection("Aserto").Bind(authorizerConfig);
+            });
 
             services.Configure<AsertoConfig>(Configuration.GetSection("Aserto"));
             services.Configure<DirectoryConfig>(Configuration.GetSection("Directory"));
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("Aserto", policy => policy.Requirements.Add(new AsertoDecisionRequirement()));
-            });
-            // Only authorizes the endpoints that have the [Authorize("Aserto")] attribute
 
             services.AddControllers();
             services.AddAutoMapper(typeof(Startup).Assembly);
@@ -84,7 +103,7 @@ namespace Aserto.TodoApp
             {
                 x.AllowAnyHeader();
                 x.AllowAnyMethod();
-                x.WithOrigins("http://localhost:3000");
+                x.WithOrigins("http://localhost:3000", "https://todo.demo.aserto.com");
                 x.AllowCredentials();
             });
 
@@ -95,27 +114,9 @@ namespace Aserto.TodoApp
 
             app.UseRouting();
             app.UseAuthentication();
-            app.UseAuthorization();
+            app.UseAsertoAuthorization();
+            app.UseAsertoCheckAuthorization();
             app.UseEndpoints(endpoints => endpoints.MapControllers());
-
-            AuthzResourceContext.Instance.ResourceMapper = (policyRoot, httpRequest) =>
-            {
-                Struct result = new Struct();
-
-                if (httpRequest.RouteValues.ContainsKey("id"))
-                {
-                    using (var scope = app.ApplicationServices.CreateScope())
-                    {
-                        var todoService = scope.ServiceProvider.GetService<ITodoService>();
-                        var todoTask = todoService.GetAsync((string)httpRequest.RouteValues["id"]);
-                        todoTask.Wait();
-
-                        result.Fields.Add("ownerID", Value.ForString(todoTask.Result.OwnerID));
-                    }
-                }
-
-                return result;
-            };
         }
     }
 }
