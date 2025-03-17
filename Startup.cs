@@ -21,7 +21,7 @@ using System.Security.Claims;
 using Aserto.AspNetCore.Middleware.Options;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using Aserto.Authorizer.V2.API;
+using Aserto.Authorizer.V2.Api;
 using Aserto.TodoApp.Persistence.Contexts;
 
 namespace Aserto.TodoApp
