@@ -11,15 +11,16 @@ using Aserto.TodoApp.Domain.Services;
 using Aserto.TodoApp.Domain.Services.Communication;
 using Aserto.TodoApp.Persistence.Contexts;
 using Aserto.TodoApp.Options;
-using Aserto.AspNetCore.Middleware.Clients.Directory.V3;
+using Aserto.Clients.Directory.V3;
 using Aserto.AspNetCore.Middleware.Options;
+using Aserto.Clients.Options;
 
 namespace Aserto.TodoApp.Services
 {
     public class TodoService : ITodoService
     {
         private readonly AppDbContext db;
-        private readonly Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory directoryClient;
+        private readonly Aserto.Clients.Directory.V3.Directory directoryClient;
         private readonly DirectoryConfig opts;
         public TodoService(IOptions<DirectoryConfig> config, AppDbContext dbContext)
         {
@@ -37,8 +38,8 @@ namespace Aserto.TodoApp.Services
                 .AddConsole();
             });
 
-            var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID, opts.Insecure);
-            directoryClient = new Aserto.AspNetCore.Middleware.Clients.Directory.V3.Directory(options, loggerFactory);
+            var options = new AsertoDirectoryOptions(opts.ServiceUrl, opts.APIKey, opts.TenantID,insecure: opts.Insecure);
+            directoryClient = new Aserto.Clients.Directory.V3.Directory(options, loggerFactory);
         }
 
         public async Task<IEnumerable<Todo>> ListAsync()
