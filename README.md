@@ -34,7 +34,7 @@ Update the content of the `appsettings.Development.json` file with the following
   },
   "OAuth": {
     "Audience": "citadel-app",
-    "Domain": "citadel.demo.aserto.com/dex"
+    "Domain": "citadel.authzen-interop.net/dex"
   }
 }
 ```
@@ -51,7 +51,7 @@ Update the content of the `appsettings.Development.json` file with the following
   },
   "Urls": "http://localhost:3001",
   "OAuth": {
-    "Domain": "citadel.demo.aserto.com/dex",
+    "Domain": "citadel.authzen-interop.net/dex",
     "Audience": "citadel-app"
   },
   "Directory": {
